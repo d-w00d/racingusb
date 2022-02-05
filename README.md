@@ -30,6 +30,12 @@ In qb-phone/client/main.lua,
     
     ----------
     
+    RegisterNetEvent('phone:SaveChanges', function()
+    	TriggerServerEvent('qb-phone:server:SaveMetaData', PhoneData.MetaData)
+    end)
+    
+    ----------
+    
     RegisterNetEvent("phone:client:hasUsb")
     AddEventHandler("phone:client:hasUsb", function()
     	local ped = PlayerPedId()
@@ -54,6 +60,19 @@ In qb-phone/client/main.lua,
 	  end)
     end)
     
+    ----
+    
+    RegisterNetEvent('qb-phone:RefreshPhone', function()
+    	LoadPhone()
+    	SetTimeout(250, function()
+        	SendNUIMessage({
+            	action = "RefreshAlerts",
+            	action = "SetUpApplications",
+           	AppData = Config.PhoneApplications,
+        	})
+    	end)
+    end)
+    
 Add this snippet to qb-phone/server/main.lua
 
     QBCore.Functions.CreateCallback('qb-phone:hasRacingUsb', function(source, cb)
@@ -67,6 +86,31 @@ Add this snippet to qb-phone/server/main.lua
           		cb(false)
       		end
     end)
+    
+ Replace qb-phone:server:InstallApplication with
+ 
+ 	RegisterNetEvent('qb-phone:server:InstallApplication', function(ApplicationData)
+    		local src = source
+    		local Player = QBCore.Functions.GetPlayer(src)
+    		Player.PlayerData.metadata["phonedata"].InstalledApps[ApplicationData.app] = ApplicationData
+    		Player.Functions.SetMetaData("phonedata", Player.PlayerData.metadata["phonedata"])
+
+    		TriggerClientEvent('phone:SaveChanges', src)
+    		TriggerClientEvent('qb-phone:RefreshPhone', src)
+	end)
+	
+Replace qb-phone:server:RemoveInstallation with
+
+	RegisterNetEvent('qb-phone:server:RemoveInstallation', function(App)
+    		local src = source
+    		local Player = QBCore.Functions.GetPlayer(src)
+    		Player.PlayerData.metadata["phonedata"].InstalledApps[App] = nil
+    		Player.Functions.SetMetaData("phonedata", Player.PlayerData.metadata["phonedata"])
+
+    		TriggerClientEvent('phone:SaveChanges', src)
+    		TriggerClientEvent('qb-phone:RefreshPhone', src)
+	end)
+ 	
     
 
 I use aj-inventory and have edited it quite a bit.
